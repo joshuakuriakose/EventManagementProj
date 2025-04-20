@@ -2,8 +2,10 @@ pipeline {
     agent { label 'DESKTOP-PNDAH72' }
 
     environment {
-        XAMPP_HTDOCS = 'C:\\xampp\\htdocs\\EventProject'
-        PROJECT_SOURCE = "${WORKSPACE}"  // or "${WORKSPACE}\\EventProject" if needed
+        XAMPP_HTDOCS = 'C:\\xampp\\htdocs\\EventProject'  // Destination directory
+        PROJECT_SOURCE = "${WORKSPACE}"  // Jenkins workspace
+        PHP_PATH = 'C:\\xampp\\php\\php.exe'  // Full path to PHP
+        APACHE_PATH = 'C:\\xampp\\apache\\bin\\httpd.exe'  // Full path to Apache
     }
 
     stages {
@@ -21,7 +23,7 @@ pipeline {
                 tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe" >nul
                 if errorlevel 1 (
                     echo Apache not running. Starting now...
-                    start "" "C:\\xampp\\apache\\bin\\httpd.exe"
+                    "C:\\xampp\\apache\\bin\\httpd.exe"
                     timeout /T 5 >nul
                 ) else (
                     echo Apache is already running.
@@ -34,9 +36,8 @@ pipeline {
             steps {
                 echo '🔍 Running PHP lint check on project files...'
                 bat '''
-                for %%f in ("%PROJECT_SOURCE%\\*.php") do (
-                    php -l "%%f"
-                    if errorlevel 1 exit /b 1
+                for %%f in (%PROJECT_SOURCE%\\*.php) do (
+                    "C:\\xampp\\php\\php.exe" -l "%%f" || exit /b 1
                 )
                 '''
             }
@@ -47,10 +48,11 @@ pipeline {
                 echo '📂 Deploying website to XAMPP htdocs...'
                 bat '''
                 if exist "%XAMPP_HTDOCS%" (
+                    echo Removing existing files...
                     rmdir /S /Q "%XAMPP_HTDOCS%"
                 )
                 mkdir "%XAMPP_HTDOCS%"
-                xcopy "%PROJECT_SOURCE%\\*" "%XAMPP_HTDOCS%\\" /E /I /Y
+                xcopy /Y /E /I "%PROJECT_SOURCE%\\*" "%XAMPP_HTDOCS%\\"
                 '''
             }
         }
@@ -58,7 +60,7 @@ pipeline {
         stage('Open Website in Browser') {
             steps {
                 echo '🌐 Opening website in default browser...'
-                bat 'start "" "http://localhost/EventProject/index.php"'
+                bat 'start "" "http://localhost/EventProject"'
             }
         }
     }
