@@ -1,66 +1,68 @@
 pipeline {
-    agent { label 'DESKTOP-PNDAH72' }  // Use your Windows agent label here
+    agent { label 'DESKTOP-PNDAH72' }
+
+    environment {
+        XAMPP_HTDOCS = 'C:\\xampp\\htdocs\\EventProject'  // Your destination directory
+        PROJECT_SOURCE = "${WORKSPACE}"  // Source: Jenkins workspace
+    }
 
     stages {
-        stage('Declarative: Checkout SCM') {
+        stage('Checkout SCM') {
             steps {
-                checkout scm  // Checkout code from your Git repository
+                echo '📥 Checking out source code from Git...'
+                checkout scm
             }
         }
-        
+
         stage('Start Apache Server') {
             steps {
-                echo '🚀 Starting Apache Server...'
+                echo '🚀 Starting Apache Server if not already running...'
                 bat '''
-                echo Checking if Apache is already running...
                 tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe"
                 if errorlevel 1 (
-                    echo Apache not running. Attempting to start...
-                    "C:\\xampp\\apache\\bin\\httpd.exe"
+                    echo Apache not running. Starting now...
+                    start "" "C:\\xampp\\apache\\bin\\httpd.exe"
+                    timeout /T 5
                 ) else (
-                    echo Apache already running.
+                    echo Apache is already running.
                 )
                 '''
             }
         }
 
-        stage('Checkout Code') {
-            steps {
-                echo '📂 Checking out the code...'
-                checkout scm  // Checkout code again if necessary, but it's already done in the first stage
-            }
-        }
-
         stage('PHP Lint Check') {
             steps {
-                echo '🔍 Running PHP lint check...'
-                bat 'php -l .\\path\\to\\your\\php\\files\\*.php'  // Add path to your PHP files for lint check
+                echo '🔍 Running PHP lint check on project files...'
+                bat '''
+                for %%f in (%PROJECT_SOURCE%\\*.php) do php -l "%%f"
+                '''
             }
         }
 
         stage('Deploy to XAMPP') {
             steps {
-                echo '🚀 Deploying to XAMPP...'
+                echo '📂 Deploying website to XAMPP htdocs...'
                 bat '''
-                copy .\\path\\to\\your\\project\\files\\* "C:\\xampp\\htdocs\\your_project\\"
+                if not exist "%XAMPP_HTDOCS%" mkdir "%XAMPP_HTDOCS%"
+                xcopy /Y /E /I "%PROJECT_SOURCE%\\*" "%XAMPP_HTDOCS%\\"
                 '''
             }
         }
 
-        stage('Open in Browser') {
+        stage('Open Website in Browser') {
             steps {
-                echo '🌐 Opening the site in the browser...'
-                bat 'start http://localhost/your_project'  // Open the site in the browser
+                echo '🌐 Opening website in default browser...'
+                bat 'start http://localhost/EventProject'
             }
         }
     }
 
     post {
         always {
-            echo '✔️ Pipeline finished'
+            echo '✔️ Pipeline execution complete.'
         }
         success {
-            echo '✅ Build succeeded!'
+            echo '✅ Build completed successfully!'
         }
         failure {
             echo '❌ Build failed!'
