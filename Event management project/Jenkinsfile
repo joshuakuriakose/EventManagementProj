@@ -4,20 +4,21 @@ pipeline {
     environment {
         XAMPP_PATH = "C:\\xampp"
         DEPLOY_PATH = "${XAMPP_PATH}\\htdocs\\EventManagement"
-        PHP_PATH = "C:\\xampp\\php\\php.exe"
+        PHP_PATH = "${XAMPP_PATH}\\php\\php.exe"
         APACHE_PATH = "${XAMPP_PATH}\\apache\\bin\\httpd.exe"
     }
 
     stages {
         stage('Start Apache Server') {
             steps {
-                echo '🚀 Starting Apache Server...'
+                echo '🔌 Starting Apache server...'
                 bat '''
-                tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe" >nul
+                tasklist | findstr /I "httpd.exe"
                 if errorlevel 1 (
                     start "" "%APACHE_PATH%"
+                    timeout /t 5 >nul
                 ) else (
-                    echo Apache already running.
+                    echo Apache is already running.
                 )
                 '''
             }
