@@ -16,7 +16,7 @@ pipeline {
                 tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe"
                 if errorlevel 1 (
                     echo Apache not running. Attempting to start...
-                    "C:\\xampp\\apache\\bin\\httpd.exe"
+                    net start Apache2.4
                 ) else (
                     echo Apache already running.
                 )
