@@ -2,8 +2,8 @@ pipeline {
     agent { label 'DESKTOP-PNDAH72' }
 
     environment {
-        XAMPP_HTDOCS = 'C:\\xampp\\htdocs\\EventProject'  // Your destination directory
-        PROJECT_SOURCE = "${WORKSPACE}"  // Source: Jenkins workspace
+        XAMPP_HTDOCS = 'C:\\xampp\\htdocs\\EventProject'
+        PROJECT_SOURCE = "${WORKSPACE}"  // or "${WORKSPACE}\\EventProject" if needed
     }
 
     stages {
@@ -18,11 +18,11 @@ pipeline {
             steps {
                 echo '🚀 Starting Apache Server if not already running...'
                 bat '''
-                tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe"
+                tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe" >nul
                 if errorlevel 1 (
                     echo Apache not running. Starting now...
                     start "" "C:\\xampp\\apache\\bin\\httpd.exe"
-                    timeout /T 5
+                    timeout /T 5 >nul
                 ) else (
                     echo Apache is already running.
                 )
@@ -34,7 +34,10 @@ pipeline {
             steps {
                 echo '🔍 Running PHP lint check on project files...'
                 bat '''
-                for %%f in (%PROJECT_SOURCE%\\*.php) do php -l "%%f"
+                for %%f in ("%PROJECT_SOURCE%\\*.php") do (
+                    php -l "%%f"
+                    if errorlevel 1 exit /b 1
+                )
                 '''
             }
         }
@@ -43,8 +46,11 @@ pipeline {
             steps {
                 echo '📂 Deploying website to XAMPP htdocs...'
                 bat '''
-                if not exist "%XAMPP_HTDOCS%" mkdir "%XAMPP_HTDOCS%"
-                xcopy /Y /E /I "%PROJECT_SOURCE%\\*" "%XAMPP_HTDOCS%\\"
+                if exist "%XAMPP_HTDOCS%" (
+                    rmdir /S /Q "%XAMPP_HTDOCS%"
+                )
+                mkdir "%XAMPP_HTDOCS%"
+                xcopy "%PROJECT_SOURCE%\\*" "%XAMPP_HTDOCS%\\" /E /I /Y
                 '''
             }
         }
@@ -52,7 +58,7 @@ pipeline {
         stage('Open Website in Browser') {
             steps {
                 echo '🌐 Opening website in default browser...'
-                bat 'start http://localhost/EventProject'
+                bat 'start "" "http://localhost/EventProject/index.php"'
             }
         }
     }
