@@ -4,26 +4,10 @@ pipeline {
     environment {
         XAMPP_PATH = "C:\\xampp"
         DEPLOY_PATH = "${XAMPP_PATH}\\htdocs\\EventManagement"
-        PHP_PATH = "${XAMPP_PATH}\\php\\php.exe"
-        APACHE_PATH = "${XAMPP_PATH}\\apache\\bin\\httpd.exe"
+        PHP_PATH = "C:\\xampp\\php\\php.exe"
     }
 
     stages {
-        stage('Start Apache Server') {
-            steps {
-                echo '🔌 Starting Apache server...'
-                bat '''
-                tasklist | findstr /I "httpd.exe"
-                if errorlevel 1 (
-                    start "" "%APACHE_PATH%"
-                    timeout /t 5 >nul
-                ) else (
-                    echo Apache is already running.
-                )
-                '''
-            }
-        }
-
         stage('Checkout Code') {
             steps {
                 echo '📦 Cloning repository...'
