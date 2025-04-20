@@ -3,12 +3,20 @@ pipeline {
 
     environment {
         XAMPP_PATH = "C:\\xampp"
-        DEPLOY_PATH = "${XAMPP_PATH}\\htdocs\\EventManagement"
+        DEPLOY_PATH = "\"${XAMPP_PATH}\\htdocs\\EventManagement\""
         PHP_PATH = "C:\\xampp\\php\\php.exe"
-        APACHE_START = "${XAMPP_PATH}\\apache\\bin\\httpd.exe"
+        APACHE_START = "\"${XAMPP_PATH}\\apache\\bin\\httpd.exe\""
+        APACHE_STOP = "\"${XAMPP_PATH}\\apache\\bin\\httpd.exe\" -k shutdown"
     }
 
     stages {
+        stage('Stop Apache Server') {
+            steps {
+                echo '🛑 Stopping Apache server...'
+                bat '"%APACHE_STOP%"'
+            }
+        }
+
         stage('Start Apache Server') {
             steps {
                 echo '🚀 Starting Apache server...'
