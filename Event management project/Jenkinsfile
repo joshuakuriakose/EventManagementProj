@@ -5,9 +5,17 @@ pipeline {
         XAMPP_PATH = "C:\\xampp"
         DEPLOY_PATH = "${XAMPP_PATH}\\htdocs\\EventManagement"
         PHP_PATH = "C:\\xampp\\php\\php.exe"
+        APACHE_START = "${XAMPP_PATH}\\apache\\bin\\httpd.exe"
     }
 
     stages {
+        stage('Start Apache Server') {
+            steps {
+                echo '🚀 Starting Apache server...'
+                bat '"%APACHE_START%"'
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 echo '📦 Cloning repository...'
@@ -53,6 +61,6 @@ pipeline {
         }
         success {
             echo '✅ Build completed successfully!'
-        }
-    }
+        }
+    }
 }
