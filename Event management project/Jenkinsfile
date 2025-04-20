@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        XAMPP_PATH = "C:\\xampp"
-        DEPLOY_PATH = "${XAMPP_PATH}\\htdocs\\EventManagement"
-        PHP_PATH = "C:\\xampp\\php\\php.exe"
-        APACHE_PATH = "${XAMPP_PATH}\\apache\\bin\\httpd.exe"
+        APACHE_PATH = 'C:\\xampp\\apache\\bin\\httpd.exe'
+        XAMPP_HTDOCS = 'C:\\xampp\\htdocs\\event-management' // Deploy path
+        PROJECT_SOURCE = "${env.WORKSPACE}\\Event Management Pipeline"
     }
 
     stages {
@@ -13,9 +12,11 @@ pipeline {
             steps {
                 echo '🚀 Starting Apache Server...'
                 bat '''
-                tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe" >nul
+                echo Checking if Apache is already running...
+                tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe"
                 if errorlevel 1 (
-                    start "" "%APACHE_PATH%"
+                    echo Apache not running. Attempting to start...
+                    "C:\\xampp\\apache\\bin\\httpd.exe"
                 ) else (
                     echo Apache already running.
                 )
@@ -25,19 +26,17 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                echo '📦 Cloning repository...'
+                echo '📥 Checking out code...'
                 checkout scm
             }
         }
 
         stage('PHP Lint Check') {
             steps {
-                echo '🔍 Running PHP lint check...'
+                echo '🧪 Running PHP lint check...'
                 bat '''
-                set PHP_PATH=%PHP_PATH%
-                for /R %%f in (*.php) do (
-                    echo Checking %%f...
-                    "%PHP_PATH%" -l "%%f" || exit /b 1
+                FOR /R %%f IN (*.php) DO (
+                    php -l "%%f"
                 )
                 '''
             }
@@ -45,29 +44,31 @@ pipeline {
 
         stage('Deploy to XAMPP') {
             steps {
-                echo '🚚 Deploying to XAMPP htdocs...'
-                bat '''
-                if exist "%DEPLOY_PATH%" rmdir /s /q "%DEPLOY_PATH%"
-                mkdir "%DEPLOY_PATH%"
-                xcopy /E /I /Y "Event management project\\*" "%DEPLOY_PATH%"
-                '''
+                echo '📂 Deploying files to XAMPP htdocs...'
+                bat """
+                if exist "${XAMPP_HTDOCS}" (
+                    rmdir /s /q "${XAMPP_HTDOCS}"
+                )
+                mkdir "${XAMPP_HTDOCS}"
+                xcopy /E /I /Y "${WORKSPACE}\\*" "${XAMPP_HTDOCS}\\"
+                """
             }
         }
 
         stage('Open in Browser') {
             steps {
-                echo '🌐 Opening project in browser...'
-                bat 'start "" "http://localhost/EventManagement/login.php"'
+                echo '🌐 Opening site in default browser...'
+                bat 'start http://localhost/event-management'
             }
         }
     }
 
     post {
-        failure {
-            echo '❌ Build failed!'
-        }
         success {
             echo '✅ Build completed successfully!'
+        }
+        failure {
+            echo '❌ Build failed!'
         }
     }
 }
