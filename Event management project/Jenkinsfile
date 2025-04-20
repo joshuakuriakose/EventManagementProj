@@ -1,13 +1,13 @@
 pipeline {
-    agent any
-
-    environment {
-        APACHE_PATH = 'C:\\xampp\\apache\\bin\\httpd.exe'
-        XAMPP_HTDOCS = 'C:\\xampp\\htdocs\\event-management' // Deploy path
-        PROJECT_SOURCE = "${env.WORKSPACE}\\Event Management Pipeline"
-    }
+    agent { label 'DESKTOP-PNDAH72' }  // Use your Windows agent label here
 
     stages {
+        stage('Declarative: Checkout SCM') {
+            steps {
+                checkout scm  // Checkout code from your Git repository
+            }
+        }
+        
         stage('Start Apache Server') {
             steps {
                 echo '🚀 Starting Apache Server...'
@@ -16,7 +16,7 @@ pipeline {
                 tasklist /FI "IMAGENAME eq httpd.exe" | find /I "httpd.exe"
                 if errorlevel 1 (
                     echo Apache not running. Attempting to start...
-                    net start Apache2.4
+                    "C:\\xampp\\apache\\bin\\httpd.exe"
                 ) else (
                     echo Apache already running.
                 )
@@ -26,46 +26,41 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                echo '📥 Checking out code...'
-                checkout scm
+                echo '📂 Checking out the code...'
+                checkout scm  // Checkout code again if necessary, but it's already done in the first stage
             }
         }
 
         stage('PHP Lint Check') {
             steps {
-                echo '🧪 Running PHP lint check...'
-                bat '''
-                FOR /R %%f IN (*.php) DO (
-                    php -l "%%f"
-                )
-                '''
+                echo '🔍 Running PHP lint check...'
+                bat 'php -l .\\path\\to\\your\\php\\files\\*.php'  // Add path to your PHP files for lint check
             }
         }
 
         stage('Deploy to XAMPP') {
             steps {
-                echo '📂 Deploying files to XAMPP htdocs...'
-                bat """
-                if exist "${XAMPP_HTDOCS}" (
-                    rmdir /s /q "${XAMPP_HTDOCS}"
-                )
-                mkdir "${XAMPP_HTDOCS}"
-                xcopy /E /I /Y "${WORKSPACE}\\*" "${XAMPP_HTDOCS}\\"
-                """
+                echo '🚀 Deploying to XAMPP...'
+                bat '''
+                copy .\\path\\to\\your\\project\\files\\* "C:\\xampp\\htdocs\\your_project\\"
+                '''
             }
         }
 
         stage('Open in Browser') {
             steps {
-                echo '🌐 Opening site in default browser...'
-                bat 'start http://localhost/event-management'
+                echo '🌐 Opening the site in the browser...'
+                bat 'start http://localhost/your_project'  // Open the site in the browser
             }
         }
     }
 
     post {
+        always {
+            echo '✔️ Pipeline finished'
+        }
         success {
-            echo '✅ Build completed successfully!'
+            echo '✅ Build succeeded!'
         }
         failure {
             echo '❌ Build failed!'
